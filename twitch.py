@@ -435,7 +435,6 @@ class Twitch:
         self._qgl_limiter = RateLimiter(capacity=5, window=1)
         # Client type, session and auth
         self._client_type: ClientInfo = ClientType.ANDROID_APP
-        self._client_type: ClientInfo = ClientType.ANDROID_APP
         self._session: aiohttp.ClientSession | None = None
         self._auth_state: _AuthState = _AuthState(self)
         # GUI
@@ -1211,7 +1210,7 @@ class Twitch:
 
     @asynccontextmanager
     async def request(
-        self, method: str, url: URL | str, *, invalidate_after: datetime | None = None, return_error: bool = False, **kwargs
+        self, method: str, url: URL | str, *, invalidate_after: datetime | None = None, **kwargs
     ) -> abc.AsyncIterator[aiohttp.ClientResponse]:
         session = await self.get_session()
         method = method.upper()
@@ -1236,7 +1235,7 @@ class Twitch:
                 )
                 assert response is not None
                 logger.debug(f"Response: {response.status}: {response}")
-                if response.status < 500 or return_error:
+                if response.status < 500:
                     # pre-read the response to avoid getting errors outside of the context manager
                     raw_response = await response.read()  # noqa
                     yield response
@@ -1436,6 +1435,10 @@ class Twitch:
             for task in fetch_campaigns_tasks:
                 task.cancel()
             raise
+        # filter out invalid campaigns
+        for campaign_id in list(inventory_data.keys()):
+            if inventory_data[campaign_id]["game"] is None:
+                del inventory_data[campaign_id]
 
         if self.settings.dump:
             # dump the campaigns data to the dump file

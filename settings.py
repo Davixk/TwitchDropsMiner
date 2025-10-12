@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 class SettingsFile(TypedDict):
     proxy: URL
     language: str
+    dark_mode: bool
     dark_theme: bool
     exclude: set[str]
     priority: list[str]
@@ -28,6 +29,7 @@ default_settings: SettingsFile = {
     "proxy": URL(),
     "priority": [],
     "exclude": set(),
+    "dark_mode": False,
     "dark_theme": False,
     "prioritize_by_ending_soonest": False,
     "autostart_tray": False,
@@ -50,6 +52,7 @@ class Settings:
     # from settings file
     proxy: URL
     language: str
+    dark_mode: bool
     dark_theme: bool
     exclude: set[str]
     priority: list[str]

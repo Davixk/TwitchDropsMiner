@@ -101,6 +101,7 @@ The Docker implementation and containerization work is based on [fireph/TwitchDr
 This repo combines both efforts to provide a **Docker-focused build** that runs efficiently in headless environments 💖
 
 Massive shoutout to:
+
 - [@DevilXD](https://github.com/DevilXD) for the original application and ongoing development
 - [@fireph](https://github.com/fireph) for the Alpine/Docker adaptation
 - All translators, maintainers, and contributors 🙏

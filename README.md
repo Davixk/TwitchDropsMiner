@@ -16,9 +16,9 @@ Upstream commits are regularly merged, and new Docker images are built and publi
 
 This container wraps **Twitch Drops Miner**, the well-loved desktop drop farming tool by [DevilXD](https://github.com/DevilXD/TwitchDropsMiner), to make it effortless to run on **servers, VPSs, NAS setups, headless devices**, or anything else that supports Docker.
 
-It’s entirely streamless — no video or audio is fetched — so you save bandwidth while still progressing active Twitch drop campaigns ✅
+It's entirely streamless — no video or audio is fetched — so you save bandwidth while still progressing active Twitch drop campaigns ✅
 
-You just log in with your Twitch account, choose what games you want drops from, and let it run.
+You just log in with your Twitch account, choose which games you want drops from, and let it run.
 
 ---
 
@@ -62,8 +62,9 @@ Then run:
 docker compose up -d
 ```
 
-Your container will start the miner and leave a console interface running.  
-Inside it, you’ll be prompted to log in once using the Twitch device-code flow.
+Your container will start the miner with a web interface accessible at `http://localhost:5800`.
+
+On first launch, you'll be prompted to log in using the Twitch device-code flow. Simply follow the instructions shown in the web interface.
 
 ---
 
@@ -72,7 +73,7 @@ Inside it, you’ll be prompted to log in once using the Twitch device-code flow
 You need to have your Twitch account linked to the games you want drops for:  
 👉 [https://www.twitch.tv/drops/campaigns](https://www.twitch.tv/drops/campaigns)
 
-This container keeps your login persistent via a \`cookies.jar\` inside your mounted \`./data\` folder.
+This container keeps your login persistent via a `cookies.jar` file inside your mounted `./config` folder.
 
 **⚠️ Do not share your cookies file. It can be used to access your Twitch account.**
 
@@ -93,11 +94,18 @@ These are inherited directly from the base project:
 
 ## 🧠 Credits
 
-All code comes from [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner).  
-This repo and image are just a **Docker-focused fork**, adapting the same core logic to non-GUI environments 💖
+All core mining logic and functionality comes from [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner).
 
-Massive shoutout to [@DevilXD](https://github.com/DevilXD) and all original translators, maintainers, and contributors 🙏  
-If you want to support them directly — [Buy Me A Coffee](https://www.buymeacoffee.com/DevilXD) / [Patreon](https://www.patreon.com/bePatron?u=26937862)
+The Docker implementation and containerization work is based on [fireph/TwitchDropsMiner](https://github.com/fireph/TwitchDropsMiner).
+
+This repo combines both efforts to provide a **Docker-focused build** that runs efficiently in headless environments 💖
+
+Massive shoutout to:
+- [@DevilXD](https://github.com/DevilXD) for the original application and ongoing development
+- [@fireph](https://github.com/fireph) for the Alpine/Docker adaptation
+- All translators, maintainers, and contributors 🙏
+
+If you want to support the original author — [Buy Me A Coffee](https://www.buymeacoffee.com/DevilXD) / [Patreon](https://www.patreon.com/bePatron?u=26937862)
 
 ---
 

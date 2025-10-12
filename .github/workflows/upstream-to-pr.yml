@@ -1,42 +1,198 @@
-name: Upstream to PR
+name: Sync Upstream and Create PR
 
 on:
-    schedule:
-        - cron: "0 0 * * *" # Runs every day at midnight
-    workflow_dispatch:
+  schedule:
+    # Run twice a week: Monday and Thursday at 7:27 AM UTC
+    - cron: "27 7 * * 1,4"
+  workflow_dispatch: {}
 
 jobs:
-    upstream-sync:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
-                  token: ${{ secrets.GITHUB_TOKEN }}
+  sync-devilxd:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-            - name: DevilXD Upstream to PR
-              uses: fopina/upstream-to-pr@v1
-              with:
-                  token: ${{ secrets.UPSTREAM_TO_PR_PAT }}
-                  upstream-repository: https://github.com/devilxd/twitchdropsminer.git
-                  upstream-branch: master
-                  keep-old: false
-                  reviewers: Davixk
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote and fetch
+        run: |
+          git remote add upstream https://github.com/DevilXD/TwitchDropsMiner.git
+          git fetch upstream
+
+      - name: Create or update sync branch
+        run: |
+          SYNC_BRANCH="devilxd/master"
+
+          # Check if branch exists locally
+          if git show-ref --verify --quiet refs/heads/$SYNC_BRANCH; then
+            echo "Branch $SYNC_BRANCH exists locally, checking it out"
+            git checkout $SYNC_BRANCH
+          else
+            # Check if branch exists on remote
+            if git show-ref --verify --quiet refs/remotes/origin/$SYNC_BRANCH; then
+              echo "Branch $SYNC_BRANCH exists on remote, checking it out"
+              git checkout -b $SYNC_BRANCH origin/$SYNC_BRANCH
+            else
+              echo "Branch $SYNC_BRANCH doesn't exist, creating it from upstream/master"
+              git checkout -b $SYNC_BRANCH upstream/master
+              git push -u origin $SYNC_BRANCH
+            fi
+          fi
+
+      - name: Merge upstream changes
+        run: |
+          SYNC_BRANCH="devilxd/master"
+
+          # Get current commit hash
+          prev_commit=$(git rev-parse HEAD)
+
+          # Merge upstream/master
+          git merge upstream/master --no-edit
+
+          # Get new commit hash
+          new_commit=$(git rev-parse HEAD)
+
+          # Push changes
+          git push origin $SYNC_BRANCH
+
+          # Set outputs for next step
+          echo "prev_commit=$prev_commit" >> $GITHUB_ENV
+          echo "new_commit=$new_commit" >> $GITHUB_ENV
+          echo "sync_branch=$SYNC_BRANCH" >> $GITHUB_ENV
+
+      - name: Create Pull Request
+        run: |
+          # Only create PR if there are new changes
+          if [ "$prev_commit" != "$new_commit" ]; then
+            echo "New changes detected, creating/updating PR"
             
-            # - name: Windows200000 Upstream to PR
-            #   uses: fopina/upstream-to-pr@v1
-            #   with:
-            #       token: ${{ secrets.UPSTREAM_TO_PR_PAT }}
-            #       upstream-repository: https://github.com/Windows200000/TwitchDropsMiner-updated.git
-            #       upstream-branch: master
-            #       keep-old: false
-            #       reviewers: Davixk
+            # Check if PR already exists
+            existing_pr=$(gh pr list --head "$sync_branch" --base dev --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
             
-            # - name: fireph Upstream to PR
-            #   uses: fopina/upstream-to-pr@v1
-            #   with:
-            #       token: ${{ secrets.UPSTREAM_TO_PR_PAT }}
-            #       upstream-repository: https://github.com/fireph/TwitchDropsMiner-Alpine.git
-            #       upstream-branch: master
-            #       keep-old: false
-            #       reviewers: Davixk
+            if [ -n "$existing_pr" ]; then
+              echo "PR #$existing_pr already exists and will be auto-updated"
+            else
+              echo "Creating new PR"
+              gh pr create \
+                --title "Sync upstream changes from DevilXD/TwitchDropsMiner" \
+                --body "Automated sync of changes from upstream repository DevilXD/TwitchDropsMiner:master to dev branch.
+
+              This PR contains the latest changes from the upstream repository.
+              
+              **Changes included:**
+              - Commits from $prev_commit to $new_commit
+              
+              Created automatically by GitHub Actions." \
+                --head "$sync_branch" \
+                --base dev
+            fi
+          else
+            echo "No new changes detected, skipping PR creation"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sync-fireph:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote and fetch
+        run: |
+          git remote add upstream-fireph https://github.com/fireph/TwitchDropsMiner.git
+          git fetch upstream-fireph
+
+      - name: Create or update sync branch
+        run: |
+          SYNC_BRANCH="fireph/no-sys-tray"
+
+          # Check if branch exists locally
+          if git show-ref --verify --quiet refs/heads/$SYNC_BRANCH; then
+            echo "Branch $SYNC_BRANCH exists locally, checking it out"
+            git checkout $SYNC_BRANCH
+          else
+            # Check if branch exists on remote
+            if git show-ref --verify --quiet refs/remotes/origin/$SYNC_BRANCH; then
+              echo "Branch $SYNC_BRANCH exists on remote, checking it out"
+              git checkout -b $SYNC_BRANCH origin/$SYNC_BRANCH
+            else
+              echo "Branch $SYNC_BRANCH doesn't exist, creating it from upstream-fireph/no-sys-tray"
+              git checkout -b $SYNC_BRANCH upstream-fireph/no-sys-tray
+              git push -u origin $SYNC_BRANCH
+            fi
+          fi
+
+      - name: Merge upstream changes
+        run: |
+          SYNC_BRANCH="fireph/no-sys-tray"
+
+          # Get current commit hash
+          prev_commit=$(git rev-parse HEAD)
+
+          # Merge upstream-fireph/no-sys-tray
+          git merge upstream-fireph/no-sys-tray --no-edit
+
+          # Get new commit hash
+          new_commit=$(git rev-parse HEAD)
+
+          # Push changes
+          git push origin $SYNC_BRANCH
+
+          # Set outputs for next step
+          echo "prev_commit=$prev_commit" >> $GITHUB_ENV
+          echo "new_commit=$new_commit" >> $GITHUB_ENV
+          echo "sync_branch=$SYNC_BRANCH" >> $GITHUB_ENV
+
+      - name: Create Pull Request
+        run: |
+          # Only create PR if there are new changes
+          if [ "$prev_commit" != "$new_commit" ]; then
+            echo "New changes detected, creating/updating PR"
+            
+            # Check if PR already exists
+            existing_pr=$(gh pr list --head "$sync_branch" --base dev --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+            
+            if [ -n "$existing_pr" ]; then
+              echo "PR #$existing_pr already exists and will be auto-updated"
+            else
+              echo "Creating new PR"
+              gh pr create \
+                --title "Sync upstream changes from fireph/TwitchDropsMiner" \
+                --body "Automated sync of changes from upstream repository fireph/TwitchDropsMiner:no-sys-tray to dev branch.
+
+              This PR contains the latest changes from the upstream repository.
+              
+              **Changes included:**
+              - Commits from $prev_commit to $new_commit
+              
+              Created automatically by GitHub Actions." \
+                --head "$sync_branch" \
+                --base dev
+            fi
+          else
+            echo "No new changes detected, skipping PR creation"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

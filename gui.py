@@ -1647,7 +1647,6 @@ def proxy_validate(entry: PlaceholderEntry, settings: Settings) -> bool:
 class _SettingsVars(TypedDict):
     tray: IntVar
     proxy: StringVar
-    dark_theme: IntVar
     autostart: IntVar
     dark_mode: IntVar
     language: StringVar
@@ -1739,14 +1738,7 @@ class SettingsPanel:
         # checkboxes frame
         checkboxes_frame = ttk.Frame(center_frame2)
         checkboxes_frame.grid(column=0, row=1)
-        ttk.Label(
-            checkboxes_frame, text=_("gui", "settings", "general", "dark_theme")
-        ).grid(column=0, row=(irow := 0), sticky="e")
-        ttk.Checkbutton(
-            checkboxes_frame,
-            variable=self._vars["dark_theme"],
-            command=self.change_theme,
-        ).grid(column=1, row=irow, sticky="w")
+        irow = 0
         # Anything tray related disabled in this version
         # ttk.Label(
         #     checkboxes_frame, text=_("gui", "settings", "general", "autostart")
@@ -1771,7 +1763,7 @@ class SettingsPanel:
         ttk.Label(
             checkboxes_frame,
             text=_("gui", "settings", "general", "prioritize_by_ending_soonest"),
-        ).grid(column=0, row=(irow := irow + 1), sticky="e")
+        ).grid(column=0, row=irow, sticky="e")
         ttk.Checkbutton(
             checkboxes_frame,
             variable=self._vars["prioritize_by_ending_soonest"],
@@ -1970,13 +1962,6 @@ class SettingsPanel:
             with autostart_file.open("r", encoding="utf8") as file:
                 # TODO: Consider deleting the old file to avoid autostart errors
                 return self._get_self_path() not in file.read()
-
-    def change_theme(self):
-        self._settings.dark_theme = bool(self._vars["dark_theme"].get())
-        if self._settings.dark_theme:
-            set_theme(self._root, self._manager, "dark")
-        else:
-            set_theme(self._root, self._manager, "light")
 
     def update_autostart(self) -> None:
         enabled = bool(self._vars["autostart"].get())
@@ -2365,11 +2350,6 @@ class GUIManager:
             self._root.after_idle(self.tray.minimize)
         else:
             self._root.after_idle(self._root.deiconify)
-
-        if self._twitch.settings.dark_theme:
-            set_theme(root, self, "dark")
-        else:
-            set_theme(root, self, "default")
 
     # https://stackoverflow.com/questions/56329342/tkinter-treeview-background-tag-not-working
     def _fixed_map(self, option):
@@ -2815,7 +2795,6 @@ if __name__ == "__main__":
                 priority=[],
                 proxy=URL(),
                 dark_mode=False,
-                dark_theme=False,
                 alter=lambda: None,
                 language="English",
                 prioritize_by_ending_soonest=False,

@@ -166,7 +166,6 @@ class GUISettingsGeneral(TypedDict):
     priority_mode: str
     prioritize_by_ending_soonest: str
     proxy: str
-    dark_theme: str
 
 
 class GUIPriorityModes(TypedDict):
@@ -363,7 +362,6 @@ default_translation: Translation = {
             "general": {
                 "name": "General",
                 "autostart": "Autostart: ",
-                "dark_theme": "Dark theme: ",
                 "tray": "Autostart into tray: ",
                 "tray_notifications": "Tray notifications: ",
                 "dark_mode": "Dark mode: ",

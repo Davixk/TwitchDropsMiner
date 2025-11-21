@@ -981,16 +981,21 @@ class Twitch:
         """
         Determines if the given channel qualifies as a watching candidate.
         """
-        if not self.wanted_games:
-            return False
-        # exit early if stream is offline or drops aren't enabled
-        if not channel.online or not channel.drops_enabled:
-            return False
-        # check if we can progress any campaign for the played game
-        if channel.game is None or channel.game not in self.wanted_games:
+        # exit early if stream is offline
+        if not channel.online:
             return False
         for campaign in self.inventory:
-            if campaign.can_earn(channel):
+            if (
+                campaign.can_earn(channel)  # let the campaign do the "special games" check
+                and (
+                    # limit watching to the games the user wants
+                    channel.game is not None
+                    and channel.drops_enabled
+                    and channel.game in self.wanted_games
+                    # let the campaign ignore all channel-related checks
+                    or campaign.game.is_special_events()
+                )
+            ):
                 return True
         return False
 
@@ -1467,7 +1472,7 @@ class Twitch:
                             drop_data["self"]["dropInstanceID"] = "..."
                 json.dump(dump_data, file, indent=4, sort_keys=True)
                 file.write("\n\n")  # add 2x new line spacer
-                json.dump(claimed_benefits, file, indent=4, sort_keys=True, default=str)
+                json.dump(inventory["gameEventDrops"], file, indent=4, sort_keys=True, default=str)
 
         # use the merged data to create campaign objects
         campaigns: list[DropsCampaign] = [
@@ -1574,7 +1579,7 @@ class Twitch:
     async def bulk_check_online(self, channels: abc.Iterable[Channel]):
         """
         Utilize batch GQL requests to check ONLINE status for a lot of channels at once.
-        Also handles the drops_enabled check.
+        Also handles the drops_enabled check (if enabled).
         """
         acl_streams_map: dict[int, JsonType] = {}
         stream_gql_ops: list[GQLOperation] = [channel.stream_gql for channel in channels]
@@ -1599,29 +1604,30 @@ class Twitch:
                 task.cancel()
             raise
         # for all channels with an active stream, check the available drops as well
-        # acl_available_drops_map: dict[int, list[JsonType]] = {}
-        # available_gql_ops: list[GQLOperation] = [
-        #     GQL_OPERATIONS["AvailableDrops"].with_variables({"channelID": str(channel_id)})
-        #     for channel_id, channel_data in acl_streams_map.items()
-        #     if channel_data["stream"] is not None  # only do this for ONLINE channels
-        # ]
-        # available_gql_tasks: list[asyncio.Task[list[JsonType]]] = [
-        #     asyncio.create_task(self.gql_request(available_gql_chunk))
-        #     for available_gql_chunk in chunk(available_gql_ops, 20)
-        # ]
-        # try:
-        #     for coro in asyncio.as_completed(available_gql_tasks):
-        #         response_list = await coro
-        #         for response_json in response_list:
-        #             available_info: JsonType = response_json["data"]["channel"]
-        #             acl_available_drops_map[int(available_info["id"])] = (
-        #                 available_info["viewerDropCampaigns"] or []
-        #             )
-        # except Exception:
-        #     # asyncio.as_completed doesn't cancel tasks on errors
-        #     for task in available_gql_tasks:
-        #         task.cancel()
-        #     raise
+        acl_available_drops_map: dict[int, list[JsonType]] = {}
+        if self.settings.available_drops_check:
+            available_gql_ops: list[GQLOperation] = [
+                GQL_OPERATIONS["AvailableDrops"].with_variables({"channelID": str(channel_id)})
+                for channel_id, channel_data in acl_streams_map.items()
+                if channel_data["stream"] is not None  # only do this for ONLINE channels
+            ]
+            available_gql_tasks: list[asyncio.Task[list[JsonType]]] = [
+                asyncio.create_task(self.gql_request(available_gql_chunk))
+                for available_gql_chunk in chunk(available_gql_ops, 20)
+            ]
+            try:
+                for coro in asyncio.as_completed(available_gql_tasks):
+                    response_list = await coro
+                    for response_json in response_list:
+                        available_info: JsonType = response_json["data"]["channel"]
+                        acl_available_drops_map[int(available_info["id"])] = (
+                            available_info["viewerDropCampaigns"] or []
+                        )
+            except Exception:
+                # asyncio.as_completed doesn't cancel tasks on errors
+                for task in available_gql_tasks:
+                    task.cancel()
+                raise
         for channel in channels:
             channel_id = channel.id
             if channel_id not in acl_streams_map:
@@ -1629,6 +1635,5 @@ class Twitch:
             channel_data = acl_streams_map[channel_id]
             if channel_data["stream"] is None:
                 continue
-            # available_drops: list[JsonType] = acl_available_drops_map[channel_id]
-            # channel.external_update(channel_data, available_drops)
-            channel.external_update(channel_data, [])
+            available_drops: list[JsonType] = acl_available_drops_map.get(channel_id, [])
+            channel.external_update(channel_data, available_drops)

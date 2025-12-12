@@ -170,6 +170,8 @@ class GUISettingsGeneral(TypedDict):
 
 class GUISettingsAdvanced(TypedDict):
     name: str
+    warning: str
+    warning_text: str
     enable_badges_emotes: str
     available_drops_check: str
 
@@ -378,6 +380,12 @@ default_translation: Translation = {
             },
             "advanced": {
                 "name": "Advanced",
+                "warning": "Warning!",
+                "warning_text": (
+                    "These options will cause the miner to misbehave.\n"
+                    "If you're experiencing any issues, "
+                    "make sure all of these options are disabled."
+                ),
                 "enable_badges_emotes": "Enable partial support for badges and emotes: ",
                 "available_drops_check": "Enable extra available drops check: ",
             },

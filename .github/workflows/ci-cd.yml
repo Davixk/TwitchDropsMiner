@@ -5,11 +5,18 @@ on:
     branches:
       - dev
       - stable
+    paths-ignore:
+      - .github/**
+      - .vscode/**
+      - .gitignore
   pull_request:
     branches:
       - dev
       - stable
-
+    paths-ignore:
+      - .github/**
+      - .vscode/**
+      - .gitignore
   workflow_dispatch:
 
 jobs:
@@ -70,5 +77,3 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           pull: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

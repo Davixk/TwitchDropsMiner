@@ -14,13 +14,15 @@ if TYPE_CHECKING:
 class SettingsFile(TypedDict):
     proxy: URL
     language: str
-    dark_theme: bool
+    dark_mode: bool
     exclude: set[str]
     priority: list[str]
     prioritize_by_ending_soonest: bool
     autostart_tray: bool
     connection_quality: int
     tray_notifications: bool
+    enable_badges_emotes: bool
+    available_drops_check: bool
     priority_mode: PriorityMode
 
 
@@ -28,12 +30,14 @@ default_settings: SettingsFile = {
     "proxy": URL(),
     "priority": [],
     "exclude": set(),
-    "dark_theme": False,
+    "dark_mode": False,
     "prioritize_by_ending_soonest": False,
     "autostart_tray": False,
     "connection_quality": 1,
     "language": DEFAULT_LANG,
     "tray_notifications": True,
+    "enable_badges_emotes": False,
+    "available_drops_check": False,
     "priority_mode": PriorityMode.PRIORITY_ONLY,
 }
 
@@ -50,13 +54,15 @@ class Settings:
     # from settings file
     proxy: URL
     language: str
-    dark_theme: bool
+    dark_mode: bool
     exclude: set[str]
     priority: list[str]
     prioritize_by_ending_soonest: bool
     autostart_tray: bool
     connection_quality: int
     tray_notifications: bool
+    enable_badges_emotes: bool
+    available_drops_check: bool
     priority_mode: PriorityMode
 
     PASSTHROUGH = ("_settings", "_args", "_altered")

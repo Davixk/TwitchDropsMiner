@@ -25,3 +25,4 @@ settings.json
 /*.AppImage
 /*.AppImage.zsync
 .venv
+temp

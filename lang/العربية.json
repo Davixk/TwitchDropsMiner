@@ -55,15 +55,10 @@
       "twofa_code": "المصادقة الثنائية (اختياري)",
       "button": "تسجيل الدخول"
     },
-    "websocket": {
-      "name": "WebSocket حالة الـ",
-      "websocket": "WebSocket #{id}:",
-      "initializing": "...جاري التهيئة",
-      "connected": "متصل",
-      "disconnected": "غير متصل",
-      "connecting": "...جاري الاتصال",
-      "disconnecting": "...جاري قطع الاتصال",
-      "reconnecting": "...إعادة الاتصال"
+    "error": {
+        "captcha": ".يرجى المحاولة مجدداَ بعد مرور 12 ساعة \n .CAPTCHA تم رفض محاولة تسجيل الدخول الخاصة بك من قبل",
+        "site_down": "...ثانية {seconds} معطل  ، إعادة المحاولة خلال Twitch",
+        "no_connection": "...ثانية {seconds} إعادة المحاولة خلال ، Twitch لا يمكن الإتصال بـ ({url})"
     },
     "gui": {
         "output": "الإخراج",

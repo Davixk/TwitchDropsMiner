@@ -3,9 +3,11 @@ from __future__ import annotations
 import os
 import re
 import sys
+import shlex
 import ctypes
 import asyncio
 import logging
+import plistlib
 import tkinter as tk
 from pathlib import Path
 from collections import abc
@@ -28,12 +30,12 @@ if sys.platform == "win32":
     import win32con
     import win32gui
 
-from cache import CurrentSeconds
 from translate import _
 from cache import ImageCache
 from exceptions import MinerException, ExitRequest
 from utils import resource_path, set_root_icon, webopen, Game, _T
 from constants import (
+    MAX_INT,
     SELF_PATH,
     IS_PACKAGED,
     SCRIPTS_PATH,
@@ -1155,7 +1157,8 @@ class TrayIcon:
             "maint": Image_module.open(resource_path("icons/maint.ico")),
         }
         self._icon_state: str = "pickaxe"
-        self.always_show_icon = True
+        self._button = ttk.Button(master, command=self.minimize, text=_("gui", "tray", "minimize"))
+        self._button.grid(column=0, row=0, sticky="ne")
 
     def __del__(self) -> None:
         self.stop()
@@ -1235,11 +1238,10 @@ class TrayIcon:
         self._manager.close()
 
     def minimize(self):
-        if not self.always_show_icon:
-            if self.icon is None:
-                self._start()
-            else:
-                self.icon.visible = True
+        if self.icon is None:
+            self._start()
+        else:
+            self.icon.visible = True
         self._manager._root.withdraw()
 
     def restore(self):
@@ -1770,13 +1772,26 @@ class SettingsPanel:
         #     command=self.update_notifications,
         # ).grid(column=1, row=irow, sticky="w")
         ttk.Label(
-            checkboxes_frame,
-            text=_("gui", "settings", "general", "prioritize_by_ending_soonest"),
-        ).grid(column=0, row=irow, sticky="e")
+            checkboxes_frame, text=_("gui", "settings", "general", "autostart")
+        ).grid(column=0, row=(irow := 0), sticky="e")
+        ttk.Checkbutton(
+            checkboxes_frame, variable=self._vars["autostart"], command=self.update_autostart
+        ).grid(column=1, row=irow, sticky="w")
+        ttk.Label(
+            checkboxes_frame, text=_("gui", "settings", "general", "tray")
+        ).grid(column=0, row=(irow := irow + 1), sticky="e")
+        ttk.Checkbutton(
+            checkboxes_frame, variable=self._vars["tray"], command=self.update_autostart
+        ).grid(column=1, row=irow, sticky="w")
+        ttk.Label(
+            checkboxes_frame, text=_("gui", "settings", "general", "tray_notifications")
+        ).grid(column=0, row=(irow := irow + 1), sticky="e")
         ttk.Checkbutton(
             checkboxes_frame,
-            variable=self._vars["prioritize_by_ending_soonest"],
-            command=self.prioritize_by_ending_soonest,
+            variable=self._vars["tray_notifications"],
+            command=lambda: setattr(
+                self._settings, "tray_notifications", bool(self._vars["tray_notifications"].get())
+            ),
         ).grid(column=1, row=irow, sticky="w")
         ttk.Label(
             checkboxes_frame, text=_("gui", "settings", "general", "dark_mode")
@@ -1871,11 +1886,7 @@ class SettingsPanel:
         self._priority_entry.grid(column=0, row=0, sticky="ew")
         priority_frame.columnconfigure(0, weight=1)
         ttk.Button(
-            priority_frame,
-            text="➕",
-            command=self.priority_add,
-            width=3,
-            style="Large.TButton",
+            priority_frame, text="➕", command=self.priority_add, width=3, style="Large.TButton"
         ).grid(column=1, row=0)
         self._priority_list = PaddedListbox(
             priority_frame,
@@ -1886,30 +1897,43 @@ class SettingsPanel:
             highlightthickness=0,
             exportselection=False,
         )
-        self._priority_list.grid(column=0, row=1, rowspan=3, sticky="nsew")
+        self._priority_list.grid(column=0, row=1, rowspan=5, sticky="nsew")
         self._priority_list.insert("end", *self._settings.priority)
-        ttk.Button(
+        weight_scale: int = 5
+        ttk.Button(  # Move to top
             priority_frame,
             width=2,
-            text="▲",
-            style="Large.TButton",
-            command=partial(self.priority_move, True),
+            text="⇈",
+            style="Arrow.TButton",
+            command=partial(self.priority_move, MAX_INT),
         ).grid(column=1, row=1, sticky="nsew")
         priority_frame.rowconfigure(1, weight=1)
-        ttk.Button(
+        ttk.Button(  # Move up
             priority_frame,
             width=2,
-            text="▼",
-            style="Large.TButton",
-            command=partial(self.priority_move, False),
+            text="↑",
+            style="Arrow.TButton",
+            command=partial(self.priority_move, 1),
         ).grid(column=1, row=2, sticky="nsew")
-        priority_frame.rowconfigure(2, weight=1)
-        ttk.Button(
+        priority_frame.rowconfigure(2, weight=weight_scale)
+        ttk.Button(  # Move down
             priority_frame,
-            text="❌",
-            command=self.priority_delete,
-            width=3,
-            style="Large.TButton",
+            width=2,
+            text="↓",
+            style="Arrow.TButton",
+            command=partial(self.priority_move, -1),
+        ).grid(column=1, row=3, sticky="nsew")
+        priority_frame.rowconfigure(3, weight=weight_scale)
+        ttk.Button(  # Move to bottom
+            priority_frame,
+            width=2,
+            text="⇊",
+            style="Arrow.TButton",
+            command=partial(self.priority_move, -MAX_INT),
+        ).grid(column=1, row=4, sticky="nsew")
+        priority_frame.rowconfigure(4, weight=1)
+        ttk.Button(
+            priority_frame, text="❌", command=self.priority_delete, width=3, style="Large.TButton"
         ).grid(column=1, row=3, sticky="ns")
         priority_frame.rowconfigure(3, weight=1)
 
@@ -1943,11 +1967,7 @@ class SettingsPanel:
         # insert them alphabetically
         self._exclude_list.insert("end", *sorted(self._settings.exclude))
         ttk.Button(
-            exclude_frame,
-            text="❌",
-            command=self.exclude_delete,
-            width=3,
-            style="Large.TButton",
+            exclude_frame, text="❌", command=self.exclude_delete, width=3, style="Large.TButton"
         ).grid(column=0, row=2, columnspan=2, sticky="ew")
 
         # Reload button
@@ -1999,6 +2019,11 @@ class SettingsPanel:
                 autostart_folder = config_autostart
         return autostart_folder / f"{self.AUTOSTART_NAME}.desktop"
 
+    def _get_mac_autostart_filepath(self) -> Path:
+        return Path(
+            Path.home(), f"Library/LaunchAgents/com.devilxd.{self.AUTOSTART_NAME.lower()}.plist"
+        )
+
     def _query_autostart(self) -> bool:
         if sys.platform == "win32":
             with RegistryKey(self.AUTOSTART_KEY, read_only=True) as key:
@@ -2015,6 +2040,12 @@ class SettingsPanel:
             with autostart_file.open("r", encoding="utf8") as file:
                 # TODO: Consider deleting the old file to avoid autostart errors
                 return self._get_self_path() in file.read()
+        elif sys.platform == "darwin":
+            plist_file = self._get_mac_autostart_filepath()
+            if not plist_file.exists():
+                return False
+            with plist_file.open('r', encoding="utf8") as file:
+                return str(SELF_PATH.resolve()) in file.read()
 
     def update_autostart(self) -> None:
         enabled = bool(self._vars["autostart"].get())
@@ -2046,6 +2077,21 @@ class SettingsPanel:
                     file.write(file_contents)
             else:
                 autostart_file.unlink(missing_ok=True)
+        elif sys.platform == "darwin":
+            plist_file = self._get_mac_autostart_filepath()
+
+            if enabled:
+                command_parts = shlex.split(self._get_autostart_path())
+                plist_data = {
+                    "Label": f"com.devilxd.{self.AUTOSTART_NAME.lower()}",
+                    "ProgramArguments": command_parts,
+                    "RunAtLoad": True,
+                }
+                plist_file.parent.mkdir(parents=True, exist_ok=True)
+                with plist_file.open("wb") as file:
+                    plistlib.dump(plist_data, file)
+            else:
+                plist_file.unlink(missing_ok=True)
 
     def update_excluded_choices(self) -> None:
         self._exclude_entry.config(
@@ -2089,21 +2135,32 @@ class SettingsPanel:
             return None
         return selection[0]
 
-    def priority_move(self, up: bool) -> None:
+    def priority_move(self, amount: int) -> None:
+        # amount > 0 = up, amount < 0 = down
         idx: int | None = self._priority_idx()
-        if idx is None:
+        max_idx: int = self._priority_list.size() - 1
+        if (
+            idx is None
+            or amount == 0
+            or amount > 0 and idx == 0
+            or amount < 0 and idx == max_idx
+        ):
             return
-        if up and idx == 0 or not up and idx == self._priority_list.size() - 1:
-            return
-        swap_idx: int = idx - 1 if up else idx + 1
+        insert_idx: int = idx - amount
+        if insert_idx <= 0:
+            insert_idx = 0
+        elif insert_idx >= max_idx:
+            insert_idx = max_idx
+
         item: str = self._priority_list.get(idx)
         self._priority_list.delete(idx)
-        self._priority_list.insert(swap_idx, item)
+        self._priority_list.insert(insert_idx, item)
         # reselect the item and scroll the list if needed
-        self._priority_list.selection_set(swap_idx)
-        self._priority_list.see(swap_idx)
-        p = self._settings.priority
-        p[idx], p[swap_idx] = p[swap_idx], p[idx]
+        self._priority_list.selection_set(insert_idx)
+        self._priority_list.see(insert_idx)
+        # update the underlying settings list too
+        self._settings.priority.pop(idx)
+        self._settings.priority.insert(insert_idx, item)
         self._settings.alter()
 
     def priority_delete(self) -> None:
@@ -2309,23 +2366,8 @@ class GUIManager:
         style.configure("green.TLabel", foreground="green")
         style.configure("yellow.TLabel", foreground="goldenrod")
         style.configure("red.TLabel", foreground="red")
-        # fonts
-        default_font = nametofont("TkDefaultFont")
-        self._fonts: dict[str, Font] = {
-            "default": default_font,
-            "large": default_font.copy(),
-            "monospaced": default_font.copy(),
-            "underlined": default_font.copy(),
-        }
-        self._fonts["large"].config(size=10)
-        self._fonts["underlined"].config(underline=True)
-        self._fonts["monospaced"].config(family="Courier New", size=10)
-        # label style with a monospace font
-        style.configure("MS.TLabel", font=self._fonts["monospaced"])
-        # button style with a larger font
-        style.configure("Large.TButton", font=self._fonts["large"])
-        # label style that mimics links
-        style.configure("Link.TLabel", font=self._fonts["underlined"], foreground="blue")
+        # fonts storage
+        self._fonts: dict[str, Font] = {}
         # end of style changes
 
         root_frame = ttk.Frame(root, padding=8)
@@ -2398,7 +2440,7 @@ class GUIManager:
             self._orig_theme_name = ''
         self.apply_theme(self._twitch.settings.dark_mode)
         # stay hidden in tray if needed, otherwise show the window when everything's ready
-        if self._twitch.settings.tray:
+        if self._twitch.settings.tray and sys.platform != "darwin":
             # NOTE: this starts the tray icon thread
             self._root.after_idle(self.tray.minimize)
         else:
@@ -2548,6 +2590,28 @@ class GUIManager:
         # print to our custom output
         self.output.print(message)
 
+    def _set_title_bar_color(self, color: int) -> None:
+        """
+        Set the Windows title bar color to match the theme.
+        Only works on Windows with DWM enabled.
+
+        Args:
+            color: ARGB color value (e.g., 0x001E1E1E for dark gray).
+        """
+        if sys.platform != "win32":
+            return
+        # DWMWA_CAPTION_COLOR = 35
+        DWMWA_CAPTION_COLOR = 35
+        hwnd = self._root.winfo_id()
+        frame_hwnd = ctypes.windll.user32.GetParent(hwnd)
+        color_value = ctypes.c_int(color)
+        ctypes.windll.dwmapi.DwmSetWindowAttribute(
+            frame_hwnd,
+            DWMWA_CAPTION_COLOR,
+            ctypes.byref(color_value),
+            ctypes.sizeof(ctypes.c_int),
+        )
+
     def apply_theme(self, dark: bool) -> None:
         """
         Apply dark/light palette to ttk styles and Tk widgets in a minimal, non-invasive way.
@@ -2555,7 +2619,7 @@ class GUIManager:
         # Palette
         if dark:
             # Switch to a configurable ttk theme for better color control
-            if self._style.theme_use() != "clam":
+            if sys.platform != "darwin" and self._style.theme_use() != "clam":
                 self._style.theme_use("clam")
             bg = "#1e1e1e"
             fg = "#e6e6e6"
@@ -2585,20 +2649,44 @@ class GUIManager:
             muted = "#404040"
             accent = "#0a84ff"
 
+        # Setting theme for macOS
+        if sys.platform == "darwin":
+            app = AppKit.NSApplication.sharedApplication()
+            if dark:
+                appearance = AppKit.NSAppearance.appearanceNamed_(AppKit.NSAppearanceNameDarkAqua)
+            else:
+                appearance = AppKit.NSAppearance.appearanceNamed_(AppKit.NSAppearanceNameAqua)
+            app.setAppearance_(appearance)
+
         s = self._style
+        # Fonts
+        default_font = nametofont("TkDefaultFont")
+        self._fonts["default"] = default_font
+        # Font - button style with a larger font
+        self._fonts["large"] = default_font.copy()
+        self._fonts["large"].config(size=10)
+        s.configure("Large.TButton", font=self._fonts["large"])
+        # Font - button style for sorting arrows
+        self._fonts["arrow"] = default_font.copy()
+        self._fonts["arrow"].config(size=16)
+        s.configure("Arrow.TButton", font=self._fonts["arrow"])
+        s.configure("Arrow.TButton", padding=-4)  # reduce padding on arrow buttons
+        # Font - label style that mimics links
+        self._fonts["underlined"] = default_font.copy()
+        self._fonts["underlined"].config(underline=True)
+        s.configure("Link.TLabel", font=self._fonts["underlined"], foreground=link)
+        # Font - label style with a monospace font
+        self._fonts["monospaced"] = default_font.copy()
+        self._fonts["monospaced"].config(family="Courier New", size=10)
+        s.configure("MS.TLabel", font=self._fonts["monospaced"])
+
         # Base containers and labels
         s.configure("TFrame", background=bg, foreground=fg)
         s.configure("TLabel", background=bg, foreground=fg)
         s.configure("TLabelframe", background=bg, foreground=fg)
         s.configure("TLabelframe.Label", background=bg, foreground=fg)
-        s.configure("MS.TLabel", background=bg, foreground=fg)
-        s.configure("green.TLabel", background=bg)
-        s.configure("yellow.TLabel", background=bg)
-        s.configure("red.TLabel", background=bg)
-        s.configure("Link.TLabel", font=self._fonts["underlined"], background=bg, foreground=link)
         # Buttons and checks
         s.configure("TButton", background=surface, foreground=fg, bordercolor=border)
-        s.configure("Large.TButton", background=surface, foreground=fg, bordercolor=border)
         s.map(
             "TButton",
             background=[("active", header), ("pressed", border)],
@@ -2720,6 +2808,14 @@ class GUIManager:
             "*Listbox.selectForeground",
         ):
             self._root.option_add(key, sel_fg)
+
+        # Set Windows title bar color to match dark theme
+        if dark:
+            # Use dark gray color 0x001E1E1E (ARGB format, matches bg color #1e1e1e)
+            self._set_title_bar_color(0x001E1E1E)
+        else:
+            # Reset to system default title bar color
+            self._set_title_bar_color(0xFFFFFFFF)
 
 
 ###################

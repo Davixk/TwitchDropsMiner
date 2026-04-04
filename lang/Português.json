@@ -55,15 +55,10 @@
       "twofa_code": "Código 2FA (opcional)",
       "button": "Entrar"
     },
-    "websocket": {
-      "name": "Status Websocket",
-      "websocket": "Websocket #{id}:",
-      "initializing": "Inicializando...",
-      "connected": "Conectado",
-      "disconnected": "Disconectado",
-      "connecting": "Conectando...",
-      "disconnecting": "Desconectando...",
-      "reconnecting": "Reconectando..."
+    "error": {
+        "captcha": "Seu login foi negado pelo CAPTCHA.\nPor favor tente em aproximadamente 12+ horas.",
+        "site_down": "Twitch está fora do ar, tentando novamente em {seconds} segundos...",
+        "no_connection": "Sem conexão com a TWITCH, reconectando em {seconds} segundos... ({url})"
     },
     "gui": {
         "output": "Saída",

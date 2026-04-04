@@ -55,15 +55,10 @@
       "twofa_code": "2FA-code (optioneel)",
       "button": "Inloggen"
     },
-    "websocket": {
-      "name": "WebSocket Status",
-      "websocket": "WebSocket #{id}:",
-      "initializing": "Initialiseren...",
-      "connected": "Verbonden",
-      "disconnected": "Verbroken",
-      "connecting": "Verbinden...",
-      "disconnecting": "Verbreken...",
-      "reconnecting": "Opnieuw verbinden..."
+    "error": {
+        "captcha": "De inlogpoging is geweigerd door CAPTCHA.\nProbeer het over minimaal 12 uur opnieuw.",
+        "site_down": "Twitch is niet beschikbaar. Probeer het over {seconds} seconden opnieuw...",
+        "no_connection": "Kan geen verbinding maken met Twitch. Probeer het over {seconds} seconden opnieuw... ({url})"
     },
     "gui": {
         "output": "Protocol",

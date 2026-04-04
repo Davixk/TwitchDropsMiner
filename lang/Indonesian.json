@@ -55,15 +55,10 @@
       "twofa_code": "Kode 2FA (opsional)",
       "button": "Login"
     },
-    "websocket": {
-      "name": "Status soket web",
-      "websocket": "Soket web #{id}:",
-      "initializing": "Menginisialisasi...",
-      "connected": "Tersambung",
-      "disconnected": "Terputus",
-      "connecting": "Menyambungkan...",
-      "disconnecting": "Memutusan sambungan...",
-      "reconnecting": "Menyambungkan kembali..."
+    "error": {
+        "captcha": "Sambungan ditolak oleh CAPTCHA. Silakan coba lagi dalam waktu sekitar 12 jam.",
+        "site_down": "Twitch tidak tersedia. Silakan coba lagi dalam {seconds} detik...",
+        "no_connection": "Tidak dapat tersambung ke Twitch. Silakan coba lagi dalam {detik} detik... ({url})"
     },
     "gui": {
         "output": "Keluaran",

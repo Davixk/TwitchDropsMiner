@@ -25,4 +25,5 @@ settings.json
 /*.AppImage
 /*.AppImage.zsync
 .venv
-temp
+temp.DS_Store
+*.app

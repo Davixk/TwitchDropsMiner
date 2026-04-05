@@ -763,7 +763,6 @@ class CampaignProgress:
         drop_vars: _DropVars = self._vars["drop"]
         campaign_vars: _CampaignVars = self._vars["campaign"]
         dseconds = self._seconds % 60
-        CurrentSeconds.set_current_seconds(dseconds)
         hours, minutes = self._divmod(drop_minutes)
         drop_vars["remaining"].set(
             _("gui", "progress", "remaining").format(time=f"{hours:>2}:{minutes:02}:{dseconds:02}")

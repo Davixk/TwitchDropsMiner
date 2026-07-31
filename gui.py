@@ -1157,6 +1157,12 @@ class TrayIcon:
             "maint": Image_module.open(resource_path("icons/maint.ico")),
         }
         self._icon_state: str = "pickaxe"
+        # This fork is headless/Docker - there is no system tray. pystray is not
+        # imported (see the top of this file), so the icon is never created and
+        # stays None for the lifetime of the app. Keep this False: every
+        # `if not self.always_show_icon` guard below depends on it, and the
+        # always-show code path was dropped in an upstream merge.
+        self.always_show_icon = False
         self._button = ttk.Button(master, command=self.minimize, text=_("gui", "tray", "minimize"))
         self._button.grid(column=0, row=0, sticky="ne")
 
@@ -1197,29 +1203,11 @@ class TrayIcon:
         return "".join(title_parts)
 
     def _start(self):
-        loop = asyncio.get_running_loop()
-        if not self.always_show_icon:
-            drop = self._manager.progress._drop
-
-        # we need this because tray icon lives in a separate thread
-        def bridge(func):
-            return lambda: loop.call_soon_threadsafe(func)
-
-        menu = pystray.Menu(
-            pystray.MenuItem(
-                _("gui", "tray", "show"), bridge(self.restore), default=True
-            ),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem(_("gui", "tray", "quit"), bridge(self.quit)),
-        )
-        self.icon = pystray.Icon(
-            "twitch_miner",
-            self._icon_images[self._icon_state],
-            self.get_title(drop),
-            menu,
-        )
-        # self.icon.run_detached()
-        # loop.run_in_executor(None, self.icon.run)
+        # No-op: headless/Docker build has no system tray. pystray is not
+        # imported, so the original body (pystray.Menu / pystray.Icon) would
+        # raise NameError if this were ever reached. self.icon stays None,
+        # which every other method here already guards for.
+        return
 
     def restore_position(self):
         if not self.always_show_icon:

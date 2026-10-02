@@ -167,7 +167,7 @@ class ClientType:
         "kimne78kx3ncx6brgo4mv6wki5h1ko",
         (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+            "(KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36"
         ),
     )
     MOBILE_WEB = ClientInfo(
@@ -178,31 +178,31 @@ class ClientType:
             # other platforms only use the major version
             (
                 "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/138.0.7204.158 Mobile Safari/537.36"
+                "(KHTML, like Gecko) Chrome/153.0.7204.158 Mobile Safari/537.36"
             ),
             (
                 "Mozilla/5.0 (Linux; Android 16; SM-A205U) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/138.0.7204.158 Mobile Safari/537.36"
+                "(KHTML, like Gecko) Chrome/153.0.7204.158 Mobile Safari/537.36"
             ),
             (
                 "Mozilla/5.0 (Linux; Android 16; SM-A102U) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/138.0.7204.158 Mobile Safari/537.36"
+                "(KHTML, like Gecko) Chrome/153.0.7204.158 Mobile Safari/537.36"
             ),
             (
                 "Mozilla/5.0 (Linux; Android 16; SM-G960U) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/138.0.7204.158 Mobile Safari/537.36"
+                "(KHTML, like Gecko) Chrome/153.0.7204.158 Mobile Safari/537.36"
             ),
             (
                 "Mozilla/5.0 (Linux; Android 16; SM-N960U) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/138.0.7204.158 Mobile Safari/537.36"
+                "(KHTML, like Gecko) Chrome/153.0.7204.158 Mobile Safari/537.36"
             ),
             (
                 "Mozilla/5.0 (Linux; Android 16; LM-Q720) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/138.0.7204.158 Mobile Safari/537.36"
+                "(KHTML, like Gecko) Chrome/153.0.7204.158 Mobile Safari/537.36"
             ),
             (
                 "Mozilla/5.0 (Linux; Android 16; LM-X420) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/138.0.7204.158 Mobile Safari/537.36"
+                "(KHTML, like Gecko) Chrome/153.0.7204.158 Mobile Safari/537.36"
             ),
         ]
     )
@@ -245,7 +245,7 @@ class ClientType:
         "ue6666qo983tsx6so1t0vnawi233wa",
         (
             "Mozilla/5.0 (Linux; Android 7.1; Smart Box C1) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+            "(KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36"
         ),
     )
 
@@ -346,7 +346,7 @@ GQL_QUERIES: dict[str, GQLPersistedQuery] = {
     # returns all in-progress campaigns
     "Inventory": GQLPersistedQuery(
         "Inventory",
-        "d86775d0ef16a63a33ad52e80eaff963b2d5b72fada7c991504a57496e1d8e4b",
+        "8337eb8541b314040b0edde0c09c5c7a2783ba1960aa9edfbf3bac16d0fec404",
         variables={
             "fetchRewardCampaigns": False,
         }
@@ -363,7 +363,7 @@ GQL_QUERIES: dict[str, GQLPersistedQuery] = {
     # returns all available campaigns
     "Campaigns": GQLPersistedQuery(
         "ViewerDropsDashboard",
-        "5a4da2ab3d5b47c9f9ce864e727b2cb346af1e3ea8b897fe8f704a97ff017619",
+        "c16bb890cc8ce7647a96ee69cd313d423a378a3dedadf630a1017cde18975feb",
         variables={
             "fetchRewardCampaigns": False,
         }
